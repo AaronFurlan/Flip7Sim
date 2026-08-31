@@ -20,3 +20,6 @@ htmlcov/
 
 # Environment variables and secrets
 .env
+
+# Dateien
+TODO*.md
