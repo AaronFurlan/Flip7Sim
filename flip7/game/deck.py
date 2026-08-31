@@ -22,9 +22,14 @@ class DeckEmptyError(RuntimeError):
     """Raised when no card can be drawn from the deck."""
 
 class Deck:
-    def __init__(self, seed: int | None = None) -> None:
+    def __init__(self, seed: int | None = None, cards: Iterable[Card] | None = None,) -> None:
         self._random = Random(seed)
-        self._cards = self.create_standard_deck()
+
+        if cards is None:
+            self._cards = self.create_standard_deck()
+        else:
+            self._cards = list(cards)
+
         self._discard_pile: list[Card] = []
 
     @staticmethod

@@ -159,3 +159,20 @@ def test_draw_card_reshuffles_discard_pile_when_needed() -> None:
     assert Counter(redrawn_cards) == Counter(cards_to_discard)
     assert deck.remaining_card_count() == 0
     assert deck.discarded_card_count() == 0
+
+def test_deck_can_use_custom_cards() -> None:
+    custom_cards = [
+        NumberCard(3),
+        NumberCard(7),
+    ]
+    deck = Deck(cards=custom_cards)
+
+    assert deck.remaining_card_count() == 2
+    assert deck.draw_card() == NumberCard(7)
+    assert deck.draw_card() == NumberCard(3)
+    assert deck.is_empty()
+
+    assert custom_cards == [
+        NumberCard(3),
+        NumberCard(7),
+    ]
