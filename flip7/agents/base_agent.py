@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
 
-from flip7.game.cards import ActionType
+from flip7.game.cards import ActionType, Card
 
 
 class TurnDecision(StrEnum):
@@ -17,6 +17,9 @@ class PlayerObservation:
     number_of_unique_numbers: int
     is_active: bool
     has_second_chance: bool
+    has_stayed: bool = False
+    has_busted: bool = False
+    round_cards: tuple[Card, ...] = ()
 
 @dataclass(frozen=True, slots=True)
 class AgentObservation:
@@ -29,6 +32,7 @@ class AgentObservation:
 class TargetOption:
     player_index: int
     player: PlayerObservation
+
 
 class BaseAgent(ABC):
     def __init__(self, player_name: str) -> None:
