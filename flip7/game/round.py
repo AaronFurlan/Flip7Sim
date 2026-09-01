@@ -157,6 +157,7 @@ class GameRound:
                 source_player=player,
                 card=card,
             )
+            self._discard_pending_action_if_no_valid_targets()
 
         else:
             raise TypeError(f"Unsupported card type: {type(card).__name__}")
@@ -351,13 +352,14 @@ class GameRound:
         self._promote_next_queued_action()
 
     def _promote_next_queued_action(self) -> None:
-        if self.pending_action is not None:
-            return
+        while self.pending_action is None and self._queued_actions:
+            self.pending_action = self._queued_actions.pop(0)
 
-        if not self._queued_actions:
-            return
+            if self.get_valid_action_targets():
+                return
 
-        self.pending_action = self._queued_actions.pop(0)
+            self.deck.discard_card(self.pending_action.card)
+            self.pending_action = None
 
     def draw_card_for_flip_three(
         self,
@@ -403,3 +405,32 @@ class GameRound:
         raise TypeError(
             f"Unsupported card type: {type(card).__name__}"
         )
+
+    def get_valid_action_targets(self) -> list[Player]:
+        pending_action = self.pending_action
+
+        if pending_action is None:
+            return []
+
+        valid_targets = [player for player in self.players if player.is_active]
+
+        if pending_action.card.action_type is ActionType.SECOND_CHANCE:
+            valid_targets = [player for player in valid_targets if not player.has_second_chance]
+
+        return valid_targets
+
+    # Only possible for second chance actions
+    def _discard_pending_action_if_no_valid_targets(self) -> bool:
+        if self.pending_action is None:
+            return False
+
+        if self.get_valid_action_targets():
+            return False
+
+        self.deck.discard_card(
+            self.pending_action.card
+        )
+        self.pending_action = None
+
+        self._promote_next_queued_action()
+        return True

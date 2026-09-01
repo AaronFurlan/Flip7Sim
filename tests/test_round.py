@@ -839,3 +839,91 @@ def test_nested_flip_three_is_resolved_after_outer_draws() -> None:
     assert inner_flip_three in alice.round_cards
     assert game_round.deck.is_empty()
 
+def test_no_pending_action_has_no_valid_targets() -> None:
+    game_round, _, _ = create_started_round()
+
+    assert game_round.get_valid_action_targets() == []
+
+
+def test_action_targets_include_only_active_players() -> None:
+    alice = Player("Alice")
+    bob = Player("Bob")
+    charlie = Player("Charlie")
+
+    game_round = GameRound(
+        players=[alice, bob, charlie],
+        deck=Deck(
+            cards=[
+                ActionCard(ActionType.FREEZE),
+                NumberCard(3),
+                NumberCard(2),
+                NumberCard(1),
+            ]
+        ),
+    )
+    game_round.start_round()
+
+    game_round.player_stays(charlie)
+    game_round.draw_card_for_player(alice)
+
+    assert game_round.get_valid_action_targets() == [
+        alice,
+        bob,
+    ]
+
+
+def test_second_chance_excludes_players_that_have_one() -> None:
+    alice = Player("Alice")
+    bob = Player("Bob")
+    charlie = Player("Charlie")
+
+    game_round = GameRound(
+        players=[alice, bob, charlie],
+        deck=Deck(
+            cards=[
+                ActionCard(ActionType.SECOND_CHANCE),
+                NumberCard(3),
+                NumberCard(2),
+                NumberCard(1),
+            ]
+        ),
+    )
+    game_round.start_round()
+
+    bob.has_second_chance = True
+    game_round.draw_card_for_player(alice)
+
+    assert game_round.get_valid_action_targets() == [
+        alice,
+        charlie,
+    ]
+
+def test_second_chance_without_valid_target_is_discarded() -> None:
+    alice = Player("Alice")
+    bob = Player("Bob")
+    action_card = ActionCard(
+        ActionType.SECOND_CHANCE
+    )
+
+    game_round = GameRound(
+        players=[alice, bob],
+        deck=Deck(
+            cards=[
+                action_card,
+                NumberCard(2),
+                NumberCard(1),
+            ]
+        ),
+    )
+    game_round.start_round()
+
+    alice.has_second_chance = True
+    bob.has_second_chance = True
+
+    game_round.draw_card_for_player(alice)
+
+    assert game_round.pending_action is None
+    assert action_card not in alice.round_cards
+    assert action_card not in bob.round_cards
+    assert game_round.deck.discarded_card_count() == 1
+
