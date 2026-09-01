@@ -18,8 +18,8 @@ from flip7.actions.flip_three_action import FlipThreeAction
 
 from flip7.game.scoring import calculate_round_score
 
+from flip7.game.constants import MINIMUM_PLAYER_COUNT
 
-MINIMUM_PLAYER_COUNT = 2
 
 class RoundStateError(RuntimeError):
     """Raised when an operation is invalid for the round state."""
