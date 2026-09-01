@@ -1,6 +1,8 @@
 import pytest
 
 from flip7.game.cards import (
+    ActionCard,
+    ActionType,
     ModifierCard,
     ModifierType,
     NumberCard,
@@ -11,6 +13,7 @@ from flip7.game.player import Player
 from flip7.simulation.simulator import (
     create_agent_observation,
     create_player_observation,
+    create_valid_target_options,
 )
 
 
@@ -135,3 +138,83 @@ def test_agent_observation_requires_active_round() -> None:
         match="active round",
     ):
         create_agent_observation(game, player_index=0)
+
+def create_game_with_pending_action(
+    action_type: ActionType,
+) -> Flip7Game:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+    ]
+
+    deck = Deck(
+        cards=[
+            NumberCard(8),
+            ActionCard(action_type=action_type),
+        ]
+    )
+
+    game = Flip7Game(
+        players=players,
+        deck=deck,
+    )
+    game.start_game()
+
+    return game
+
+
+def test_create_valid_target_options_maps_players() -> None:
+    game = create_game_with_pending_action(
+        ActionType.FREEZE
+    )
+
+    target_options = create_valid_target_options(game)
+
+    assert tuple(
+        option.player_index
+        for option in target_options
+    ) == (0, 1)
+
+    assert tuple(
+        option.player.player_name
+        for option in target_options
+    ) == ("Alice", "Bob")
+
+
+def test_target_options_use_round_target_rules() -> None:
+    game = create_game_with_pending_action(
+        ActionType.SECOND_CHANCE
+    )
+
+    game.players[1].has_second_chance = True
+
+    target_options = create_valid_target_options(game)
+
+    assert len(target_options) == 1
+    assert target_options[0].player_index == 0
+    assert target_options[0].player.player_name == "Alice"
+
+
+def test_target_options_require_pending_action() -> None:
+    game = create_started_game()
+
+    with pytest.raises(
+        RuntimeError,
+        match="pending action",
+    ):
+        create_valid_target_options(game)
+
+
+def test_target_options_require_started_game() -> None:
+    game = Flip7Game(
+        players=[
+            Player("Alice"),
+            Player("Bob"),
+        ]
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="before the game starts",
+    ):
+        create_valid_target_options(game)
