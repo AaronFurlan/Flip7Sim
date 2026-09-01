@@ -49,11 +49,32 @@ def create_agent_observation(game: Flip7Game, player_index: int) -> AgentObserva
         if index != player_index
     )
 
+    game_round = game.current_round
+
+    if (
+        not own_player.is_active
+        or not game_round.is_initial_deal_complete
+        or game_round.pending_action is not None
+    ):
+        valid_turn_decisions = ()
+
+    elif own_player.round_cards:
+        valid_turn_decisions = (
+            TurnDecision.HIT,
+            TurnDecision.STAY,
+        )
+
+    else:
+        valid_turn_decisions = (
+            TurnDecision.HIT,
+        )
+
     return AgentObservation(
         own_player=own_player,
         other_players=other_players,
         remaining_card_count=game.deck.remaining_card_count(),
         winning_score=game.winning_score,
+        valid_turn_decisions=valid_turn_decisions,
     )
 
 def create_valid_target_options(game: Flip7Game) -> tuple[TargetOption, ...]:

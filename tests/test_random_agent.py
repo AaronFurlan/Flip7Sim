@@ -1,3 +1,4 @@
+from dataclasses import replace
 import pytest
 
 from flip7.agents.base_agent import (
@@ -144,3 +145,33 @@ def test_same_seed_produces_same_target_decisions() -> None:
     )
 
     assert first_targets == second_targets
+
+def test_random_agent_respects_valid_turn_decisions() -> None:
+    agent = RandomAgent("Alice", seed=42)
+
+    observation = replace(
+        create_observation(),
+        valid_turn_decisions=(TurnDecision.HIT,),
+    )
+
+    decisions = tuple(
+        agent.choose_hit_or_stay(observation)
+        for _ in range(20)
+    )
+
+    assert decisions == (TurnDecision.HIT,) * 20
+
+
+def test_random_agent_rejects_empty_turn_decisions() -> None:
+    agent = RandomAgent("Alice", seed=42)
+
+    observation = replace(
+        create_observation(),
+        valid_turn_decisions=(),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="valid turn decision",
+    ):
+        agent.choose_hit_or_stay(observation)

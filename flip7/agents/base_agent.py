@@ -27,6 +27,10 @@ class AgentObservation:
     other_players: tuple[PlayerObservation, ...]
     remaining_card_count: int
     winning_score: int
+    valid_turn_decisions: tuple[TurnDecision, ...] = (
+        TurnDecision.HIT,
+        TurnDecision.STAY,
+    )
 
 @dataclass(frozen=True, slots=True)
 class TargetOption:
