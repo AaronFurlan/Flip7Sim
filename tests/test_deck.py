@@ -176,3 +176,29 @@ def test_deck_can_use_custom_cards() -> None:
         NumberCard(3),
         NumberCard(7),
     ]
+
+def test_remaining_card_counts_include_depleted_types() -> None:
+    freeze_card = ActionCard(
+        action_type=ActionType.FREEZE
+    )
+
+    deck = Deck(
+        cards=[
+            NumberCard(2),
+            NumberCard(2),
+            freeze_card,
+        ]
+    )
+
+    counts_before_draw = deck.remaining_card_counts()
+
+    assert counts_before_draw[NumberCard(2)] == 2
+    assert counts_before_draw[freeze_card] == 1
+
+    assert deck.draw_card() == freeze_card
+
+    counts_after_draw = deck.remaining_card_counts()
+
+    assert counts_after_draw[NumberCard(2)] == 2
+    assert counts_after_draw[freeze_card] == 0
+    assert sum(counts_after_draw.values()) == 2

@@ -3,9 +3,18 @@ from collections.abc import Callable
 from flip7.agents.base_agent import (
     AgentObservation,
     BaseAgent,
+    DeckCardObservation,
     PlayerObservation,
     TargetOption,
     TurnDecision,
+)
+from flip7.game.cards import (
+    ActionCard,
+    ActionType,
+    Card,
+    ModifierCard,
+    ModifierType,
+    NumberCard,
 )
 from flip7.game.constants import DEFAULT_WINNING_SCORE
 from flip7.game.deck import Deck
@@ -13,6 +22,43 @@ from flip7.game.game import Flip7Game
 from flip7.game.player import Player
 from flip7.game.scoring import calculate_round_score
 from flip7.game.round import DrawReason
+
+ACTION_CARD_SORT_ORDER = {
+    ActionType.FREEZE: 0,
+    ActionType.FLIP_THREE: 1,
+    ActionType.SECOND_CHANCE: 2,
+}
+
+def deck_card_sort_key(item: tuple[Card, int]) -> tuple[int, int, int]:
+    card, _ = item
+
+    if isinstance(card, NumberCard):
+        return 0, card.number, 0
+
+    if isinstance(card, ActionCard):
+        return 1, ACTION_CARD_SORT_ORDER[card.action_type], 0
+
+    if isinstance(card, ModifierCard):
+        if card.modifier_type is ModifierType.ADDITIVE:
+            return 2, 0, card.value
+
+        return 2, 1, card.value
+
+    raise TypeError(f"Unsupported card type: {type(card).__name__}")
+
+def create_deck_card_observations(deck: Deck) -> tuple[DeckCardObservation, ...]:
+    sorted_card_counts = sorted(
+        deck.remaining_card_counts().items(),
+        key=deck_card_sort_key,
+    )
+
+    return tuple(
+        DeckCardObservation(
+            card=card,
+            remaining_count=remaining_count,
+        )
+        for card, remaining_count in sorted_card_counts
+    )
 
 def create_player_observation(player: Player) -> PlayerObservation:
     unique_number_count = len({card.number for card in player.get_number_cards()})
@@ -78,6 +124,9 @@ def create_agent_observation(game: Flip7Game, player_index: int) -> AgentObserva
         remaining_card_count=game.deck.remaining_card_count(),
         winning_score=game.winning_score,
         valid_turn_decisions=valid_turn_decisions,
+        deck_card_counts=create_deck_card_observations(
+            game.deck
+        ),
     )
 
 def create_valid_target_options(game: Flip7Game) -> tuple[TargetOption, ...]:

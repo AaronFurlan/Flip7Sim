@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from collections import Counter
 from random import Random
 
 from flip7.game.cards import (
@@ -29,6 +30,12 @@ class Deck:
             self._cards = self.create_standard_deck()
         else:
             self._cards = list(cards)
+
+        self._card_catalog: list[Card] = []
+
+        for card in self._cards:
+            if card not in self._card_catalog:
+                self._card_catalog.append(card)
 
         self._discard_pile: list[Card] = []
 
@@ -102,3 +109,11 @@ class Deck:
         self._cards.extend(self._discard_pile)
         self._discard_pile.clear()
         self.shuffle()
+
+    def remaining_card_counts(self) -> dict[Card, int]:
+        counts = Counter(self._cards)
+
+        return {
+            card: counts[card]
+            for card in self._card_catalog
+        }

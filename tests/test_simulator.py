@@ -12,6 +12,7 @@ from flip7.game.game import Flip7Game
 from flip7.game.player import Player
 from flip7.simulation.simulator import (
     create_agent_observation,
+    create_deck_card_observations,
     create_player_observation,
     create_valid_target_options,
 )
@@ -218,3 +219,62 @@ def test_target_options_require_started_game() -> None:
         match="before the game starts",
     ):
         create_valid_target_options(game)
+
+def test_deck_card_observations_are_sorted() -> None:
+    deck = Deck()
+
+    observations = create_deck_card_observations(deck)
+
+    number_observations = observations[:13]
+    action_observations = observations[13:16]
+    modifier_observations = observations[16:]
+
+    assert tuple(
+        observation.card.number
+        for observation in number_observations
+        if isinstance(observation.card, NumberCard)
+    ) == tuple(range(13))
+
+    assert tuple(
+        observation.card.action_type
+        for observation in action_observations
+        if isinstance(observation.card, ActionCard)
+    ) == (
+        ActionType.FREEZE,
+        ActionType.FLIP_THREE,
+        ActionType.SECOND_CHANCE,
+    )
+
+    assert tuple(
+        (
+            observation.card.modifier_type,
+            observation.card.value,
+        )
+        for observation in modifier_observations
+        if isinstance(observation.card, ModifierCard)
+    ) == (
+        (ModifierType.ADDITIVE, 2),
+        (ModifierType.ADDITIVE, 4),
+        (ModifierType.ADDITIVE, 6),
+        (ModifierType.ADDITIVE, 8),
+        (ModifierType.ADDITIVE, 10),
+        (ModifierType.MULTIPLIER, 2),
+    )
+
+def test_agent_observation_contains_deck_counts() -> None:
+    game = create_started_game()
+
+    observation = create_agent_observation(
+        game=game,
+        player_index=0,
+    )
+
+    assert sum(
+        card.remaining_count
+        for card in observation.deck_card_counts
+    ) == observation.remaining_card_count
+
+    assert all(
+        card.remaining_count == 0
+        for card in observation.deck_card_counts
+    )

@@ -22,6 +22,15 @@ class PlayerObservation:
     round_cards: tuple[Card, ...] = ()
 
 @dataclass(frozen=True, slots=True)
+class DeckCardObservation:
+    card: Card
+    remaining_count: int
+
+    def __post_init__(self) -> None:
+        if self.remaining_count < 0:
+            raise ValueError("The remaining card count cannot be negative.")
+
+@dataclass(frozen=True, slots=True)
 class AgentObservation:
     own_player: PlayerObservation
     other_players: tuple[PlayerObservation, ...]
@@ -31,6 +40,7 @@ class AgentObservation:
         TurnDecision.HIT,
         TurnDecision.STAY,
     )
+    deck_card_counts: tuple[DeckCardObservation, ...] = ()
 
 @dataclass(frozen=True, slots=True)
 class TargetOption:
