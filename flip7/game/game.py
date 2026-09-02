@@ -25,6 +25,7 @@ class Flip7Game:
         self.winning_score = winning_score
         self.current_round: GameRound | None = None
         self.has_started = False
+        self._next_starting_player_index = 0
         self._uses_custom_deck = deck is not None
 
         if deck is None:
@@ -43,6 +44,8 @@ class Flip7Game:
         if not self._uses_custom_deck:
             self.deck.shuffle()
 
+        self._next_starting_player_index = 0
+
         self.has_started = True
 
         return self.start_new_round()
@@ -57,8 +60,17 @@ class Flip7Game:
         if self.is_game_finished():
             raise GameStateError("The game is already finished.")
 
-        self.current_round = GameRound(players=self.players, deck=self.deck)
+        starting_player_index = self._next_starting_player_index
+
+        self.current_round = GameRound(
+            players=self.players,
+            deck=self.deck,
+            starting_player_index=starting_player_index,
+        )
+
         self.current_round.start_round()
+
+        self._next_starting_player_index = (starting_player_index + 1) % len(self.players)
 
         return self.current_round
 

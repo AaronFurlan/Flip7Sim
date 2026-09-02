@@ -43,12 +43,16 @@ class CardDrawEvent:
     reason: DrawReason
 
 class GameRound:
-    def __init__(self, players: list[Player], deck: Deck) -> None:
+    def __init__(self, players: list[Player], deck: Deck, starting_player_index: int = 0) -> None:
         if len(players) < MINIMUM_PLAYER_COUNT:
-            raise ValueError("At least two players are required.")
+            raise ValueError(f"At least {MINIMUM_PLAYER_COUNT} players are required.")
+
+        if not 0 <= starting_player_index < len(players):
+            raise ValueError("The starting player index is out of range.")
 
         self.players = list(players)
         self.deck = deck
+        self.starting_player_index = starting_player_index
 
         self.has_started = False
         self.has_finished = False
@@ -56,7 +60,7 @@ class GameRound:
         self.pending_action: PendingAction | None = None
 
         self.is_initial_deal_complete = False
-        self._next_starting_player_index = 0
+        self._initial_deal_position = 0
 
         self.round_scores: dict[Player, int] = {}
 
@@ -206,14 +210,11 @@ class GameRound:
         if self.is_initial_deal_complete:
             return
 
-        while (
-            self._next_starting_player_index
-            < len(self.players)
-        ):
-            player = self.players[
-                self._next_starting_player_index
-            ]
-            self._next_starting_player_index += 1
+        while self._initial_deal_position < len(self.players):
+            player_index = (self.starting_player_index + self._initial_deal_position) % len(self.players)
+
+            player = self.players[player_index]
+            self._initial_deal_position += 1
 
             if not player.is_active:
                 continue

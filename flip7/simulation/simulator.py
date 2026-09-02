@@ -173,7 +173,7 @@ class GameSimulation:
                 "The simulation has no active round."
             )
 
-        current_player_index = 0
+        current_player_index = game_round.starting_player_index
 
         while not game_round.is_round_finished():
             if game_round.pending_action is not None:

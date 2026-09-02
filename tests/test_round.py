@@ -983,3 +983,59 @@ def test_round_records_flip_three_card_draw() -> None:
     assert event.card == NumberCard(8)
     assert event.reason is DrawReason.FLIP_THREE
 
+def test_round_rejects_invalid_starting_player_index() -> None:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+    ]
+    deck = Deck()
+
+    with pytest.raises(
+        ValueError,
+        match="starting player index",
+    ):
+        GameRound(
+            players=players,
+            deck=deck,
+            starting_player_index=2,
+        )
+
+
+def test_initial_deal_starts_at_selected_player() -> None:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+        Player("Charlie"),
+    ]
+    deck = Deck(
+        cards=[
+            NumberCard(3),
+            NumberCard(2),
+            NumberCard(1),
+        ]
+    )
+
+    game_round = GameRound(
+        players=players,
+        deck=deck,
+        starting_player_index=1,
+    )
+
+    game_round.start_round()
+
+    assert tuple(
+        event.player_index
+        for event in game_round.card_draw_events
+    ) == (1, 2, 0)
+
+    assert players[0].round_cards == [
+        NumberCard(3)
+    ]
+    assert players[1].round_cards == [
+        NumberCard(1)
+    ]
+    assert players[2].round_cards == [
+        NumberCard(2)
+    ]
+
+

@@ -244,3 +244,81 @@ def test_game_supports_multiple_winners() -> None:
         alice,
         bob,
     ]
+
+def test_starting_player_rotates_between_rounds() -> None:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+    ]
+    deck = Deck(
+        cards=[
+            NumberCard(4),
+            NumberCard(3),
+            NumberCard(2),
+            NumberCard(1),
+        ]
+    )
+    game = Flip7Game(
+        players=players,
+        winning_score=1000,
+        deck=deck,
+    )
+
+    first_round = game.start_game()
+
+    assert first_round.starting_player_index == 0
+    assert tuple(
+        event.player_index
+        for event in first_round.card_draw_events
+    ) == (0, 1)
+
+    for player in players:
+        first_round.player_stays(player)
+
+    first_round.finish_round()
+
+    second_round = game.start_new_round()
+
+    assert second_round.starting_player_index == 1
+    assert tuple(
+        event.player_index
+        for event in second_round.card_draw_events
+    ) == (1, 0)
+
+
+def test_starting_player_rotation_wraps_around() -> None:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+    ]
+    deck = Deck(
+        cards=[
+            NumberCard(4),
+            NumberCard(3),
+            NumberCard(2),
+            NumberCard(1),
+        ]
+    )
+    game = Flip7Game(
+        players=players,
+        winning_score=1000,
+        deck=deck,
+    )
+
+    first_round = game.start_game()
+
+    for player in players:
+        first_round.player_stays(player)
+
+    first_round.finish_round()
+
+    second_round = game.start_new_round()
+
+    for player in players:
+        second_round.player_stays(player)
+
+    second_round.finish_round()
+
+    third_round = game.start_new_round()
+
+    assert third_round.starting_player_index == 0

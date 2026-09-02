@@ -16,20 +16,25 @@ from flip7.simulation.simulator import GameSimulation
 
 class ScriptedAgent(BaseAgent):
     def __init__(
-        self,
-        player_name: str,
-        decisions: list[TurnDecision],
-        target_player_index: int = 0,
+            self,
+            player_name: str,
+            decisions: list[TurnDecision],
+            target_player_index: int = 0,
+            decision_log: list[str] | None = None,
     ) -> None:
         super().__init__(player_name)
         self._decisions = list(decisions)
         self._target_player_index = target_player_index
         self.target_selection_count = 0
+        self._decision_log = decision_log
 
     def choose_hit_or_stay(
         self,
         observation: AgentObservation,
     ) -> TurnDecision:
+        if self._decision_log is not None:
+            self._decision_log.append(self.player_name)
+
         if not self._decisions:
             raise AssertionError(
                 f"{self.player_name} received an unexpected turn."
@@ -199,4 +204,49 @@ def test_simulation_reports_round_details() -> None:
         "Round scores:",
         "  Alice: +3 (total: 3)",
         "  Bob: +8 (total: 8)",
+    ]
+
+def test_turn_order_rotates_between_rounds() -> None:
+    decision_log: list[str] = []
+
+    alice = ScriptedAgent(
+        "Alice",
+        decisions=[
+            TurnDecision.STAY,
+            TurnDecision.STAY,
+        ],
+        decision_log=decision_log,
+    )
+    bob = ScriptedAgent(
+        "Bob",
+        decisions=[
+            TurnDecision.STAY,
+            TurnDecision.STAY,
+        ],
+        decision_log=decision_log,
+    )
+
+    deck = Deck(
+        cards=[
+            NumberCard(9),
+            NumberCard(8),
+            NumberCard(2),
+            NumberCard(1),
+        ]
+    )
+
+    simulation = GameSimulation(
+        agents=[alice, bob],
+        winning_score=10,
+        deck=deck,
+    )
+
+    simulation.run()
+
+    assert simulation.rounds_played == 2
+    assert decision_log == [
+        "Alice",
+        "Bob",
+        "Bob",
+        "Alice",
     ]
