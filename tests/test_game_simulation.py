@@ -90,6 +90,8 @@ def test_simulation_completes_single_round_game() -> None:
 
 
 def test_simulation_resolves_initial_action_card() -> None:
+    messages: list[str] = []
+
     alice = ScriptedAgent(
         "Alice",
         decisions=[
@@ -116,6 +118,7 @@ def test_simulation_resolves_initial_action_card() -> None:
         agents=[alice, bob],
         winning_score=1,
         deck=deck,
+        reporter=messages.append,
     )
 
     winners = simulation.run()
@@ -127,6 +130,13 @@ def test_simulation_resolves_initial_action_card() -> None:
         winner.player_name
         for winner in winners
     ) == ("Alice",)
+
+    assert (
+            "Alice draws Action Freeze [initial deal]"
+            in messages
+    )
+    assert "Alice plays Freeze on Bob" in messages
+    assert "Alice draws Number 8 [hit]" in messages
 
 
 def test_two_random_agents_complete_a_game() -> None:
@@ -153,3 +163,40 @@ def test_two_random_agents_complete_a_game() -> None:
         winner.total_score == highest_score
         for winner in winners
     )
+
+def test_simulation_reports_round_details() -> None:
+    messages: list[str] = []
+
+    simulation = GameSimulation(
+        agents=[
+            ScriptedAgent(
+                "Alice",
+                decisions=[TurnDecision.STAY],
+            ),
+            ScriptedAgent(
+                "Bob",
+                decisions=[TurnDecision.STAY],
+            ),
+        ],
+        winning_score=1,
+        deck=Deck(
+            cards=[
+                NumberCard(8),
+                NumberCard(3),
+            ]
+        ),
+        reporter=messages.append,
+    )
+
+    simulation.run()
+
+    assert messages == [
+        "=== Round 1 ===",
+        "Alice draws Number 3 [initial deal]",
+        "Bob draws Number 8 [initial deal]",
+        "Alice chooses STAY with 3 points",
+        "Bob chooses STAY with 8 points",
+        "Round scores:",
+        "  Alice: +3 (total: 3)",
+        "  Bob: +8 (total: 8)",
+    ]

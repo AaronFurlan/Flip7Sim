@@ -6,15 +6,19 @@ def main() -> None:
     agents = [
         RandomAgent("Alice", seed=11),
         RandomAgent("Bob", seed=22),
+        RandomAgent("Jane", seed=33),
     ]
 
     simulation = GameSimulation(
         agents=agents,
-        winning_score=1000,
+        winning_score=200,
         seed=42,
+        reporter=print,
     )
 
     winners = simulation.run()
+
+    print()
 
     print("Flip 7 simulation finished")
     print(f"Rounds played: {simulation.rounds_played}")

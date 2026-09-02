@@ -13,6 +13,7 @@ from flip7.game.round import (
     GameRound,
     PendingAction,
     RoundStateError,
+    DrawReason,
 )
 
 def create_started_round() -> tuple[
@@ -926,4 +927,59 @@ def test_second_chance_without_valid_target_is_discarded() -> None:
     assert action_card not in alice.round_cards
     assert action_card not in bob.round_cards
     assert game_round.deck.discarded_card_count() == 1
+
+def test_round_records_initial_card_draws() -> None:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+    ]
+    deck = Deck(
+        cards=[
+            NumberCard(8),
+            NumberCard(3),
+        ]
+    )
+    game_round = GameRound(players, deck)
+
+    game_round.start_round()
+
+    events = game_round.card_draw_events
+
+    assert len(events) == 2
+
+    assert events[0].player_index == 0
+    assert events[0].player_name == "Alice"
+    assert events[0].card == NumberCard(3)
+    assert events[0].reason is DrawReason.INITIAL_DEAL
+
+    assert events[1].player_index == 1
+    assert events[1].player_name == "Bob"
+    assert events[1].card == NumberCard(8)
+    assert events[1].reason is DrawReason.INITIAL_DEAL
+
+
+def test_round_records_flip_three_card_draw() -> None:
+    players = [
+        Player("Alice"),
+        Player("Bob"),
+    ]
+    deck = Deck(
+        cards=[
+            NumberCard(9),
+            NumberCard(8),
+            NumberCard(4),
+            NumberCard(3),
+        ]
+    )
+    game_round = GameRound(players, deck)
+    game_round.start_round()
+
+    game_round.draw_card_for_flip_three(players[0])
+
+    event = game_round.card_draw_events[-1]
+
+    assert event.player_index == 0
+    assert event.player_name == "Alice"
+    assert event.card == NumberCard(8)
+    assert event.reason is DrawReason.FLIP_THREE
 

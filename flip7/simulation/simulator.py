@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from flip7.agents.base_agent import (
     AgentObservation,
     BaseAgent,
@@ -10,6 +12,7 @@ from flip7.game.deck import Deck
 from flip7.game.game import Flip7Game
 from flip7.game.player import Player
 from flip7.game.scoring import calculate_round_score
+from flip7.game.round import DrawReason
 
 def create_player_observation(player: Player) -> PlayerObservation:
     unique_number_count = len({card.number for card in player.get_number_cards()})
@@ -121,6 +124,7 @@ class GameSimulation:
         winning_score: int = DEFAULT_WINNING_SCORE,
         seed: int | None = None,
         deck: Deck | None = None,
+        reporter: Callable[[str], None] | None = None,
     ) -> None:
         self.agents = list(agents)
         self.players = [Player(agent.player_name) for agent in self.agents]
@@ -133,9 +137,12 @@ class GameSimulation:
         )
 
         self.rounds_played = 0
+        self._reporter = reporter
+        self._reported_card_draw_count = 0
 
     def run(self) -> list[Player]:
         self.game.start_game()
+        self._report_round_started()
 
         while True:
             self._play_current_round()
@@ -143,15 +150,20 @@ class GameSimulation:
             game_round = self.game.current_round
 
             if game_round is None:
-                raise RuntimeError("The simulation has no active round.")
+                raise RuntimeError(
+                    "The simulation has no active round."
+                )
 
-            game_round.finish_round()
+            round_scores = game_round.finish_round()
             self.rounds_played += 1
+
+            self._report_round_finished(round_scores)
 
             if self.game.is_game_finished():
                 return self.game.get_winners()
 
             self.game.start_new_round()
+            self._report_round_started()
 
     def _play_current_round(self) -> None:
         game_round = self.game.current_round
@@ -191,13 +203,37 @@ class GameSimulation:
             ].choose_hit_or_stay(observation)
 
             if decision is TurnDecision.HIT:
+                self._report(
+                    f"{player.player_name} chooses HIT"
+                )
+
                 game_round.draw_card_for_player(player)
+                self._report_new_card_draws()
+
+                if player.has_busted:
+                    self._report(
+                        f"{player.player_name} BUSTS"
+                    )
+
+                elif game_round.check_for_flip_seven(player):
+                    self._report(
+                        f"{player.player_name} achieves FLIP 7"
+                    )
 
             elif decision is TurnDecision.STAY:
+                round_score = calculate_round_score(player)
+
                 game_round.player_stays(player)
 
+                self._report(
+                    f"{player.player_name} chooses STAY "
+                    f"with {round_score} points"
+                )
+
             else:
-                raise RuntimeError(f"Unsupported turn decision: {decision!r}")
+                raise RuntimeError(
+                    f"Unsupported turn decision: {decision!r}"
+                )
 
     def _resolve_pending_action(self) -> None:
         game_round = self.game.current_round
@@ -245,4 +281,86 @@ class GameSimulation:
             chosen_target.player_index
         ]
 
+        action_name = (
+            pending_action.card.action_type.value
+            .replace("_", " ")
+            .title()
+        )
+
+        self._report(
+            f"{pending_action.source_player.player_name} "
+            f"plays {action_name} on "
+            f"{target_player.player_name}"
+        )
+
         game_round.resolve_pending_action(target_player)
+
+        self._report_new_card_draws()
+
+        if target_player.has_busted:
+            self._report(
+                f"{target_player.player_name} BUSTS"
+            )
+
+        elif game_round.check_for_flip_seven(target_player):
+            self._report(
+                f"{target_player.player_name} achieves FLIP 7"
+            )
+
+    def _report(self, message: str) -> None:
+        if self._reporter is not None:
+            self._reporter(message)
+
+    def _report_round_started(self) -> None:
+        if self.rounds_played > 0:
+            self._report("")
+
+        self._report(
+            f"=== Round {self.rounds_played + 1} ==="
+        )
+
+        self._reported_card_draw_count = 0
+        self._report_new_card_draws()
+
+    def _report_new_card_draws(self) -> None:
+        game_round = self.game.current_round
+
+        if game_round is None:
+            raise RuntimeError(
+                "The simulation has no active round."
+            )
+
+        new_events = game_round.card_draw_events[
+            self._reported_card_draw_count:
+        ]
+
+        reason_names = {
+            DrawReason.INITIAL_DEAL: "initial deal",
+            DrawReason.HIT: "hit",
+            DrawReason.FLIP_THREE: "Flip Three",
+        }
+
+        for event in new_events:
+            reason_name = reason_names[event.reason]
+
+            self._report(
+                f"{event.player_name} draws "
+                f"{event.card} [{reason_name}]"
+            )
+
+        self._reported_card_draw_count = len(
+            game_round.card_draw_events
+        )
+
+    def _report_round_finished(
+            self,
+            round_scores: dict[Player, int],
+    ) -> None:
+        self._report("Round scores:")
+
+        for player in self.players:
+            self._report(
+                f"  {player.player_name}: "
+                f"+{round_scores[player]} "
+                f"(total: {player.total_score})"
+            )

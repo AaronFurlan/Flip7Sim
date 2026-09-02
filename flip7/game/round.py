@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import StrEnum
 
 from flip7.game.cards import (
     ActionCard,
@@ -29,6 +30,18 @@ class PendingAction:
     source_player: Player
     card: ActionCard
 
+class DrawReason(StrEnum):
+    INITIAL_DEAL = "initial_deal"
+    HIT = "hit"
+    FLIP_THREE = "flip_three"
+
+@dataclass(frozen=True, slots=True)
+class CardDrawEvent:
+    player_index: int
+    player_name: str
+    card: Card
+    reason: DrawReason
+
 class GameRound:
     def __init__(self, players: list[Player], deck: Deck) -> None:
         if len(players) < MINIMUM_PLAYER_COUNT:
@@ -49,6 +62,8 @@ class GameRound:
 
         self._queued_actions: list[PendingAction] = []
 
+        self.card_draw_events: list[CardDrawEvent] = []
+
     def start_round(self) -> None:
         if self.has_started and not self.has_finished:
             raise RoundStateError(
@@ -64,6 +79,8 @@ class GameRound:
 
         self.is_initial_deal_complete = False
         self._next_starting_player_index = 0
+
+        self.card_draw_events = []
 
         self.continue_starting_deal()
 
@@ -138,13 +155,19 @@ class GameRound:
         self._validate_active_player(player)
         player.add_card(card)
 
-    def draw_card_for_player(self, player: Player) -> Card:
+    def draw_card_for_player(self, player: Player, reason: DrawReason = DrawReason.HIT,) -> Card:
         self._validate_active_player(player)
 
         if self.pending_action is not None:
             raise RoundStateError("A pending action is already in progress.")
 
         card = self.deck.draw_card()
+
+        self._record_card_draw(
+            player=player,
+            card=card,
+            reason=reason,
+        )
 
         if isinstance(card, NumberCard):
             self.process_number_card(player, card)
@@ -195,7 +218,7 @@ class GameRound:
             if not player.is_active:
                 continue
 
-            self.draw_card_for_player(player)
+            self.draw_card_for_player(player, reason=DrawReason.INITIAL_DEAL)
 
             if self.pending_action is not None:
                 return
@@ -374,6 +397,12 @@ class GameRound:
 
         card = self.deck.draw_card()
 
+        self._record_card_draw(
+            player=player,
+            card=card,
+            reason=DrawReason.FLIP_THREE,
+        )
+
         if isinstance(card, NumberCard):
             self.process_number_card(player, card)
             return None
@@ -434,3 +463,19 @@ class GameRound:
 
         self._promote_next_queued_action()
         return True
+
+    def _record_card_draw(self, player: Player, card: Card, reason: DrawReason) -> None:
+        player_index = next(
+            index
+            for index, candidate in enumerate(self.players)
+            if candidate is player
+        )
+
+        self.card_draw_events.append(
+            CardDrawEvent(
+                player_index=player_index,
+                player_name=player.player_name,
+                card=card,
+                reason=reason,
+            )
+        )
