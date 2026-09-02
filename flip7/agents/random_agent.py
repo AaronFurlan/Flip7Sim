@@ -15,7 +15,7 @@ class RandomAgent(BaseAgent):
 
     def choose_hit_or_stay(self, observation: AgentObservation) -> TurnDecision:
         if not observation.valid_turn_decisions:
-            raise ValueError("A requires at least one valid turn decision.")
+            raise ValueError("A random agent requires at least one valid turn decision.")
 
         return self._random.choice(observation.valid_turn_decisions)
 
