@@ -19,7 +19,7 @@ class AlgorithmicNumbersOnlyAgent(BaseAgent):
         if not observation.valid_turn_decisions:
             raise ValueError("An algorithmic numbers-only agent requires at least one valid turn decision.")
 
-        standing_score = observation.own_player.total_score
+        standing_score = observation.own_player.current_round_score
         accumulated_deck_score = 0
         evaluated_cards = 0
         
