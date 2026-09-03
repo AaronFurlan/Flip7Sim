@@ -34,6 +34,7 @@ class AlwaysHitAgent(BaseAgent):
                 break
 
         if target is None:
+            return valid_targets[0]  # TODO: Remove this line once the bug with agents acting while already out of the round
             raise ValueError(
                 f"No valid target found for player name {self.player_name}."
             )
