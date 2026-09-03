@@ -1,5 +1,6 @@
 from flip7.agents.random_agent import RandomAgent
 from flip7.agents.always_hit_agent import AlwaysHitAgent
+from flip7.agents.algorithmic_numbers_only_agent import AlgorithmicNumbersOnlyAgent
 from flip7.simulation.simulator import GameSimulation
 
 
@@ -9,6 +10,7 @@ def main() -> None:
         RandomAgent("Bob", seed=22),
         RandomAgent("Jane", seed=33),
         AlwaysHitAgent("Ballsy"),
+        AlgorithmicNumbersOnlyAgent("Rainman"),
     ]
 
     simulation = GameSimulation(
