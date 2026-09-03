@@ -8,7 +8,7 @@ def main() -> None:
         RandomAgent("Alice", seed=11),
         RandomAgent("Bob", seed=22),
         RandomAgent("Jane", seed=33),
-        AlwaysHitAgent("Ballsy", 3),
+        AlwaysHitAgent("Ballsy"),
     ]
 
     simulation = GameSimulation(

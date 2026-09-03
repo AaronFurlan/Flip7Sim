@@ -7,9 +7,8 @@ from flip7.agents.base_agent import (
 from flip7.game.cards import ActionType
 
 class AlwaysHitAgent(BaseAgent):
-    def __init__(self, player_name: str, player_index: int) -> None:
+    def __init__(self, player_name: str) -> None:
         super().__init__(player_name)
-        self.player_index = player_index
 
     def choose_hit_or_stay(self, observation: AgentObservation) -> TurnDecision:
         if not observation.valid_turn_decisions:
@@ -30,13 +29,13 @@ class AlwaysHitAgent(BaseAgent):
 
         target = None
         for t in valid_targets:
-            if t.player_index == self.player_index:
+            if t.player.player_name == self.player_name:
                 target = t
                 break
 
         if target is None:
             raise ValueError(
-                f"No valid target found for player index {self.player_index}."
+                f"No valid target found for player name {self.player_name}."
             )
 
         return target
