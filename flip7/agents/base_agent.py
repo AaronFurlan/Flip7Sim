@@ -34,6 +34,7 @@ class DeckCardObservation:
 class AgentObservation:
     own_player: PlayerObservation
     other_players: tuple[PlayerObservation, ...]
+    deck_content: list[Card]
     remaining_card_count: int
     winning_score: int
     valid_turn_decisions: tuple[TurnDecision, ...] = (

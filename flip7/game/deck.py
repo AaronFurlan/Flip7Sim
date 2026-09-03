@@ -76,6 +76,24 @@ class Deck:
     def shuffle(self) -> None:
         self._random.shuffle(self._cards)
 
+    @staticmethod
+    def _card_sort_key(card: Card) -> tuple[int, int]:
+        if isinstance(card, NumberCard):
+            return (0, card.number)
+
+        if isinstance(card, ModifierCard):
+            if card.modifier_type is ModifierType.ADDITIVE:
+                return (1, card.value)
+            return (2, card.value)
+
+        if isinstance(card, ActionCard):
+            return (3, card.action_type)
+
+    def get_deck_content(self) -> list[Card]:
+        deck_content = self._cards.copy()
+        deck_content.sort(key=self._card_sort_key)
+        return deck_content
+
     def remaining_card_count(self) -> int:
         return len(self._cards)
 

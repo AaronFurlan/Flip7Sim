@@ -121,6 +121,7 @@ def create_agent_observation(game: Flip7Game, player_index: int) -> AgentObserva
     return AgentObservation(
         own_player=own_player,
         other_players=other_players,
+        deck_content=game.deck.get_deck_content(),
         remaining_card_count=game.deck.remaining_card_count(),
         winning_score=game.winning_score,
         valid_turn_decisions=valid_turn_decisions,
