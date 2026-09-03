@@ -1,4 +1,5 @@
 from flip7.agents.random_agent import RandomAgent
+from flip7.agents.always_hit_agent import AlwaysHitAgent
 from flip7.simulation.simulator import GameSimulation
 
 
@@ -7,6 +8,7 @@ def main() -> None:
         RandomAgent("Alice", seed=11),
         RandomAgent("Bob", seed=22),
         RandomAgent("Jane", seed=33),
+        AlwaysHitAgent("Ballsy", 3),
     ]
 
     simulation = GameSimulation(
