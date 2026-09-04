@@ -20,6 +20,7 @@ class PlayerObservation:
     has_stayed: bool = False
     has_busted: bool = False
     round_cards: tuple[Card, ...] = ()
+    player_index: int | None = None
 
 @dataclass(frozen=True, slots=True)
 class DeckCardObservation:
@@ -29,6 +30,17 @@ class DeckCardObservation:
     def __post_init__(self) -> None:
         if self.remaining_count < 0:
             raise ValueError("The remaining card count cannot be negative.")
+
+@dataclass(frozen=True, slots=True)
+class PendingActionObservation:
+    source_player_index: int
+    action_type: ActionType
+
+    def __post_init__(self) -> None:
+        if self.source_player_index < 0:
+            raise ValueError(
+                "The source player index cannot be negative."
+            )
 
 @dataclass(frozen=True, slots=True)
 class AgentObservation:
@@ -42,6 +54,10 @@ class AgentObservation:
         TurnDecision.STAY,
     )
     deck_card_counts: tuple[DeckCardObservation, ...] = ()
+    discarded_card_counts: tuple[DeckCardObservation, ...] = ()
+    queued_actions: tuple[PendingActionObservation, ...] = ()
+    own_player_index: int = 0
+    next_starting_player_index: int = 0
 
 @dataclass(frozen=True, slots=True)
 class TargetOption:
@@ -55,6 +71,35 @@ class BaseAgent(ABC):
             raise ValueError("The agent player name must not be empty.")
 
         self.player_name = player_name
+
+    @staticmethod
+    def find_own_target(
+            observation: AgentObservation,
+            valid_targets: tuple[TargetOption, ...],
+    ) -> TargetOption | None:
+        """Returns the own player from the given valid targets."""
+        return next(
+            (
+                target
+                for target in valid_targets
+                if target.player_index
+                   == observation.own_player_index
+            ),
+            None,
+        )
+
+    @staticmethod
+    def get_opponent_targets(
+        observation: AgentObservation,
+        valid_targets: tuple[TargetOption, ...],
+    ) -> tuple[TargetOption, ...]:
+        """Returns the opponent players from the given valid targets."""
+        return tuple(
+            target
+            for target in valid_targets
+            if target.player_index
+            != observation.own_player_index
+        )
 
     @abstractmethod
     def choose_hit_or_stay(
