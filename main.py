@@ -1,22 +1,22 @@
 from flip7.agents.random_agent import RandomAgent
 from flip7.agents.always_hit_agent import AlwaysHitAgent
 from flip7.agents.algorithmic_numbers_only_agent import AlgorithmicNumbersOnlyAgent
+from flip7.agents.threshold_agent import SimpleThresholdAgent
 from flip7.simulation.simulator import GameSimulation
 
 
 def main() -> None:
     agents = [
-        RandomAgent("Alice", seed=11),
-        RandomAgent("Bob", seed=22),
-        RandomAgent("Jane", seed=33),
+        RandomAgent("RandyRandom", seed=11),
         AlwaysHitAgent("Ballsy"),
         AlgorithmicNumbersOnlyAgent("Rainman"),
+        SimpleThresholdAgent("ConnyConservative")
     ]
 
     simulation = GameSimulation(
         agents=agents,
-        winning_score=200,
-        seed=42,
+        winning_score=10000,
+        seed=37,
         reporter=print,
     )
 
