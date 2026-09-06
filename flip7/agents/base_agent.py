@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 from flip7.game.cards import ActionType, Card
@@ -46,9 +46,13 @@ class PendingActionObservation:
 class AgentObservation:
     own_player: PlayerObservation
     other_players: tuple[PlayerObservation, ...]
-    deck_content: list[Card]
     remaining_card_count: int
     winning_score: int
+
+    deck_content: list[Card] = field(
+        default_factory=list
+    )
+
     valid_turn_decisions: tuple[TurnDecision, ...] = (
         TurnDecision.HIT,
         TurnDecision.STAY,

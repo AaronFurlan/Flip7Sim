@@ -5,6 +5,8 @@ from flip7.agents.base_agent import (
     TurnDecision,
 )
 from flip7.agents.random_agent import RandomAgent
+from flip7.agents.mcts_agent import MCTSAgent
+from flip7.agents.threshold_agent import SimpleThresholdAgent
 from flip7.game.cards import (
     ActionCard,
     ActionType,
@@ -250,3 +252,28 @@ def test_turn_order_rotates_between_rounds() -> None:
         "Bob",
         "Alice",
     ]
+
+
+def test_mcts_agent_completes_real_game_simulation() -> None:
+    simulation = GameSimulation(
+        agents=[
+            MCTSAgent(
+                "Alice",
+                simulations=20,
+                max_depth=8,
+                seed=11,
+            ),
+            SimpleThresholdAgent("Bob"),
+        ],
+        winning_score=30,
+        seed=37,
+    )
+
+    winners = simulation.run()
+
+    assert simulation.rounds_played >= 1
+    assert winners
+    assert max(
+        player.total_score
+        for player in simulation.players
+    ) >= 30

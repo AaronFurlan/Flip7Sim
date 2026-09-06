@@ -9,7 +9,7 @@ from flip7.agents.base_agent import (
     TargetOption,
     TurnDecision,
 )
-from flip7.game.cards import ActionType
+from flip7.game.cards import ActionType, NumberCard
 
 
 class IncompleteAgent(BaseAgent):
@@ -110,3 +110,20 @@ def test_agent_observation_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         setattr(observation, "remaining_card_count", 10)
+
+
+def test_agent_observation_uses_empty_deck_content_by_default() -> None:
+    observation = create_observation()
+
+    assert observation.deck_content == []
+    assert isinstance(observation.deck_content, list)
+
+
+def test_agent_observations_do_not_share_default_deck_content() -> None:
+    first_observation = create_observation()
+    second_observation = create_observation()
+
+    first_observation.deck_content.append(NumberCard(7))
+
+    assert first_observation.deck_content == [NumberCard(7)]
+    assert second_observation.deck_content == []

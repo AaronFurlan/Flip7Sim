@@ -212,3 +212,87 @@ def test_mcts_does_not_mutate_initial_state() -> None:
 
     assert search.find_best_action(initial_state) == "good"
     assert initial_state == MutableState()
+
+
+@dataclass
+class TwoStepState:
+    depth: int = 0
+    reward: float = 0.0
+
+
+class TwoStepModel:
+    def get_valid_actions(
+        self,
+        state: TwoStepState,
+    ) -> tuple[str, ...]:
+        if self.is_terminal(state):
+            return ()
+
+        if state.depth == 0:
+            return ("left", "right")
+
+        return ("bad", "good")
+
+    def sample_transition(
+        self,
+        state: TwoStepState,
+        action: str,
+        random_generator: Random,
+    ) -> TwoStepState:
+        del random_generator
+        state.depth += 1
+
+        if action == "good":
+            state.reward = 1.0
+
+        return state
+
+    def is_terminal(self, state: TwoStepState) -> bool:
+        return state.depth == 2
+
+    def get_reward(self, state: TwoStepState) -> float:
+        return state.reward
+
+
+def test_mcts_uses_configured_rollout_policy() -> None:
+    selected_rollout_actions: list[str] = []
+
+    def choose_rollout_action(
+        state: TwoStepState,
+        valid_actions: tuple[str, ...],
+        random_generator: Random,
+    ) -> str:
+        del state, random_generator
+        selected_rollout_actions.append("good")
+        assert "good" in valid_actions
+        return "good"
+
+    search = MCTSSearch(
+        model=TwoStepModel(),
+        simulations=2,
+        max_depth=2,
+        seed=42,
+        rollout_policy=choose_rollout_action,
+    )
+
+    search.find_best_action(TwoStepState())
+
+    assert selected_rollout_actions == ["good", "good"]
+
+
+def test_mcts_rejects_invalid_rollout_action() -> None:
+    search = MCTSSearch(
+        model=TwoStepModel(),
+        simulations=2,
+        max_depth=2,
+        seed=42,
+        rollout_policy=(
+            lambda state, actions, random_generator: "invalid"
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="rollout policy selected an invalid action",
+    ):
+        search.find_best_action(TwoStepState())

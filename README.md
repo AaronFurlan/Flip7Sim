@@ -9,6 +9,7 @@ A Python simulation of the card game **Flip 7** with interchangeable decision-ma
 - Freeze, Flip Three, and Second Chance
 - Multi-round games with winner detection
 - Algorithm-independent agent interface
+- Monte Carlo Tree Search agent with opponent rollouts
 - Reproducible Random-vs-Random simulations
 - Automated tests with pytest
 
@@ -26,6 +27,39 @@ python -m pip install pytest
 ```powershell
 python main.py
 ```
+
+## MCTS Agent
+
+```python
+from flip7.agents import MCTSAgent
+
+agent = MCTSAgent(
+    "Monte",
+    simulations=100,
+    max_depth=30,
+    seed=42,
+)
+```
+
+Higher `simulations` values improve the search at the cost of runtime. The
+agent simulates opponent turns and can search across multiple rounds. Existing
+agents can be supplied as `opponent_agent` and `rollout_agent`; both default to
+`SimpleThresholdAgent`.
+
+Run the reproducible MCTS benchmark with:
+
+```powershell
+python -m benchmarks.mcts_game
+```
+
+Run a tournament with alternating seat positions:
+
+```powershell
+python -m benchmarks.mcts_tournament --games 20
+```
+
+The current MCTS defaults are `200` simulations, an exploration weight of
+`0.9`, and a maximum search depth of `20`.
 
 ## Run tests
 ```powershell
@@ -53,6 +87,7 @@ AgentObservation(
             ),
         ),
     ),
+
     other_players=(
         PlayerObservation(
             player_name="Bob",
@@ -61,14 +96,93 @@ AgentObservation(
             number_of_unique_numbers=2,
             is_active=True,
             has_second_chance=True,
-            round_cards=(...),
+            has_stayed=False,
+            has_busted=False,
+            round_cards=(
+                NumberCard(number=7),
+                NumberCard(number=11),
+                ActionCard(
+                    action_type=ActionType.SECOND_CHANCE,
+                ),
+            ),
         ),
     ),
-    remaining_card_count=61,
+
+    remaining_card_count=73,
     winning_score=200,
+
     valid_turn_decisions=(
         TurnDecision.HIT,
         TurnDecision.STAY,
+    ),
+
+    deck_card_counts=(
+        # Zahlenkarten: numerisch sortiert
+        DeckCardObservation(
+            card=NumberCard(number=0),
+            remaining_count=1,
+        ),
+        DeckCardObservation(
+            card=NumberCard(number=1),
+            remaining_count=1,
+        ),
+        DeckCardObservation(
+            card=NumberCard(number=2),
+            remaining_count=2,
+        ),
+
+        # ... Number 3 bis Number 11 ...
+
+        DeckCardObservation(
+            card=NumberCard(number=12),
+            remaining_count=10,
+        ),
+
+        # Aktionskarten
+        DeckCardObservation(
+            card=ActionCard(
+                action_type=ActionType.FREEZE,
+            ),
+            remaining_count=2,
+        ),
+        DeckCardObservation(
+            card=ActionCard(
+                action_type=ActionType.FLIP_THREE,
+            ),
+            remaining_count=3,
+        ),
+        DeckCardObservation(
+            card=ActionCard(
+                action_type=ActionType.SECOND_CHANCE,
+            ),
+            remaining_count=1,
+        ),
+
+        # Modifierkarten
+        DeckCardObservation(
+            card=ModifierCard(
+                modifier_type=ModifierType.ADDITIVE,
+                value=2,
+            ),
+            remaining_count=1,
+        ),
+
+        # ... +4, +6 und +8 ...
+
+        DeckCardObservation(
+            card=ModifierCard(
+                modifier_type=ModifierType.ADDITIVE,
+                value=10,
+            ),
+            remaining_count=0,
+        ),
+        DeckCardObservation(
+            card=ModifierCard(
+                modifier_type=ModifierType.MULTIPLIER,
+                value=2,
+            ),
+            remaining_count=1,
+        ),
     ),
 )
 ```

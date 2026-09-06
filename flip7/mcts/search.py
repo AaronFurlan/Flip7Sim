@@ -2,7 +2,7 @@ from collections.abc import Hashable
 from copy import deepcopy
 from math import inf, log, sqrt
 from random import Random
-from typing import Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from flip7.mcts.model import SearchModel
 from flip7.mcts.node import MCTSNode
@@ -10,6 +10,10 @@ from flip7.mcts.node import MCTSNode
 
 StateType = TypeVar("StateType")
 ActionType = TypeVar("ActionType", bound=Hashable)
+RolloutPolicy = Callable[
+    [StateType, tuple[ActionType, ...], Random],
+    ActionType,
+]
 
 
 def calculate_ucb1_score(
@@ -86,6 +90,9 @@ class MCTSSearch(Generic[StateType, ActionType]):
         exploration_weight: float = 1.414,
         max_depth: int = 100,
         seed: int | None = None,
+        rollout_policy: (
+            RolloutPolicy[StateType, ActionType] | None
+        ) = None,
     ) -> None:
         if simulations <= 0:
             raise ValueError(
@@ -107,6 +114,7 @@ class MCTSSearch(Generic[StateType, ActionType]):
         self.exploration_weight = exploration_weight
         self.max_depth = max_depth
         self.random_generator = Random(seed)
+        self.rollout_policy = rollout_policy
 
     def find_best_action(
         self,
@@ -223,8 +231,9 @@ class MCTSSearch(Generic[StateType, ActionType]):
                     "A non-terminal state has no valid actions."
                 )
 
-            action = self.random_generator.choice(
-                valid_actions
+            action = self._choose_rollout_action(
+                state=state,
+                valid_actions=valid_actions,
             )
 
             state = self.model.sample_transition(
@@ -239,6 +248,27 @@ class MCTSSearch(Generic[StateType, ActionType]):
 
         for visited_node in visited_nodes:
             visited_node.update(reward)
+
+    def _choose_rollout_action(
+        self,
+        state: StateType,
+        valid_actions: tuple[ActionType, ...],
+    ) -> ActionType:
+        if self.rollout_policy is None:
+            return self.random_generator.choice(valid_actions)
+
+        action = self.rollout_policy(
+            state,
+            valid_actions,
+            self.random_generator,
+        )
+
+        if action not in valid_actions:
+            raise ValueError(
+                "The rollout policy selected an invalid action."
+            )
+
+        return action
 
     def _get_most_visited_action(
         self,

@@ -278,3 +278,17 @@ def test_agent_observation_contains_deck_counts() -> None:
         card.remaining_count == 0
         for card in observation.deck_card_counts
     )
+
+
+def test_agent_observation_contains_independent_deck_list() -> None:
+    game = create_started_game()
+
+    observation = create_agent_observation(
+        game=game,
+        player_index=0,
+    )
+    observation.deck_content.append(NumberCard(12))
+
+    assert isinstance(observation.deck_content, list)
+    assert game.deck.remaining_card_count() == 0
+    assert game.deck.get_deck_content() == []

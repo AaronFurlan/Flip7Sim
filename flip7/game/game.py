@@ -33,6 +33,10 @@ class Flip7Game:
         else:
             self.deck = deck
 
+    @property
+    def next_starting_player_index(self) -> int:
+        return self._next_starting_player_index
+
     def start_game(self) -> GameRound:
         if self.has_started:
             raise GameStateError("The game has already started.")

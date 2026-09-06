@@ -135,3 +135,11 @@ class Deck:
             card: counts[card]
             for card in self._card_catalog
         }
+
+    def discarded_card_counts(self) -> dict[Card, int]:
+        counts = Counter(self._discard_pile)
+
+        return {
+            card: counts[card]
+            for card in self._card_catalog
+        }

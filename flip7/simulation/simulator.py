@@ -7,6 +7,7 @@ from flip7.agents.base_agent import (
     PlayerObservation,
     TargetOption,
     TurnDecision,
+    PendingActionObservation,
 )
 from flip7.game.cards import (
     ActionCard,
@@ -60,8 +61,14 @@ def create_deck_card_observations(deck: Deck) -> tuple[DeckCardObservation, ...]
         for card, remaining_count in sorted_card_counts
     )
 
-def create_player_observation(player: Player) -> PlayerObservation:
-    unique_number_count = len({card.number for card in player.get_number_cards()})
+def create_player_observation(
+    player: Player,
+    player_index: int | None = None,
+) -> PlayerObservation:
+    unique_number_count = len({
+        card.number
+        for card in player.get_number_cards()
+    })
 
     return PlayerObservation(
         player_name=player.player_name,
@@ -73,6 +80,7 @@ def create_player_observation(player: Player) -> PlayerObservation:
         has_stayed=player.has_stayed,
         has_busted=player.has_busted,
         round_cards=tuple(player.round_cards),
+        player_index=player_index,
     )
 
 
@@ -89,11 +97,15 @@ def create_agent_observation(game: Flip7Game, player_index: int) -> AgentObserva
         raise IndexError("The player index is out of range.")
 
     own_player = create_player_observation(
-        game.players[player_index]
+        game.players[player_index],
+        player_index=player_index,
     )
 
     other_players = tuple(
-        create_player_observation(player)
+        create_player_observation(
+            player,
+            player_index=index,
+        )
         for index, player in enumerate(game.players)
         if index != player_index
     )
@@ -118,15 +130,45 @@ def create_agent_observation(game: Flip7Game, player_index: int) -> AgentObserva
             TurnDecision.HIT,
         )
 
+    queued_actions = tuple(
+        PendingActionObservation(
+            source_player_index=game.players.index(
+                pending_action.source_player
+            ),
+            action_type=pending_action.card.action_type,
+        )
+        for pending_action
+        in game_round.get_queued_actions()
+    )
+
+    discarded_card_counts = tuple(
+        DeckCardObservation(
+            card=card,
+            remaining_count=count,
+        )
+        for card, count in sorted(
+            game.deck.discarded_card_counts().items(),
+            key=deck_card_sort_key,
+        )
+    )
+
     return AgentObservation(
         own_player=own_player,
         other_players=other_players,
         deck_content=game.deck.get_deck_content(),
-        remaining_card_count=game.deck.remaining_card_count(),
+        remaining_card_count=(
+            game.deck.remaining_card_count()
+        ),
         winning_score=game.winning_score,
         valid_turn_decisions=valid_turn_decisions,
         deck_card_counts=create_deck_card_observations(
             game.deck
+        ),
+        discarded_card_counts=discarded_card_counts,
+        queued_actions=queued_actions,
+        own_player_index=player_index,
+        next_starting_player_index=(
+            game.next_starting_player_index
         ),
     )
 
@@ -161,7 +203,10 @@ def create_valid_target_options(game: Flip7Game) -> tuple[TargetOption, ...]:
         target_options.append(
             TargetOption(
                 player_index=player_index,
-                player=create_player_observation(target_player),
+                player=create_player_observation(
+                    target_player,
+                    player_index=player_index,
+                ),
             )
         )
 

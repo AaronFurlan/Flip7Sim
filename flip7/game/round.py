@@ -364,6 +364,9 @@ class GameRound:
 
         return dict(self.round_scores)
 
+    def get_queued_actions(self) -> tuple[PendingAction, ...]:
+        return tuple(self._queued_actions)
+
     def queue_pending_actions(
         self,
         actions: list[PendingAction],
