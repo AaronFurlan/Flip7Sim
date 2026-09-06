@@ -10,6 +10,8 @@ MCTS simulates possible game outcomes to select an action:
 The most visited root action is selected. Searches use copied game states, so
 the real game is not modified.
 
+![img.png](img.png)
+
 ## Files
 
 - `search.py` and `node.py` — generic MCTS
