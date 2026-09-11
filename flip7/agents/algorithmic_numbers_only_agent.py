@@ -1,10 +1,10 @@
 from flip7.agents.base_agent import (
     AgentObservation,
     BaseAgent,
-    Card,
     TargetOption,
     TurnDecision,
 )
+from flip7.agents.reusable_strategies import basic_sensible_action_strategy
 from flip7.game.cards import (
     CardType,
     ModifierType,
@@ -68,16 +68,18 @@ class AlgorithmicNumbersOnlyAgent(BaseAgent):
                 "An algorithmic numbers-only agent requires at least one valid target."
             )
 
-        target = None
-        for t in valid_targets:
-            if t.player.player_name == self.player_name:
-                target = t
-                break
+        self_target = self.find_own_target(
+            observation,
+            valid_targets,
+        )
 
-        if target is None:
-            return valid_targets[0]  # TODO: Remove this line once the bug with agents acting while already out of the round
-            raise ValueError(
-                f"No valid target found for player name {self.player_name}."
-            )
+        opponent_targets = self.get_opponent_targets(
+            observation,
+            valid_targets,
+        )
 
-        return target
+        return basic_sensible_action_strategy(
+            action_type,
+            self_target=self_target,
+            opponent_targets=opponent_targets,
+        )
