@@ -6,6 +6,7 @@ from flip7.agents.base_agent import (
     TargetOption,
     TurnDecision,
 )
+from flip7.agents.reusable_strategies import basic_sensible_action_strategy
 from flip7.game.cards import ActionType
 
 class SimpleThresholdAgent(BaseAgent):
@@ -44,25 +45,8 @@ class SimpleThresholdAgent(BaseAgent):
             valid_targets,
         )
 
-
-
-        if action_type is ActionType.SECOND_CHANCE:
-            if own_target is not None:
-                return own_target
-            else:
-                # chooses opponent player with the lowest total score
-                return min(opponent_targets, key=lambda target: target.player.total_score)
-
-        if action_type is ActionType.FREEZE:
-            possible_targets = opponent_targets or valid_targets
-
-            return max(possible_targets, key=lambda target: target.player.total_score)
-
-        if action_type is ActionType.FLIP_THREE:
-            possible_targets = opponent_targets or valid_targets
-
-        return max(possible_targets, key=lambda target: (target.player.current_round_score, target.player.total_score))
-
-        raise ValueError(
-            f"Unsupported action type: {action_type!r}"
+        return basic_sensible_action_strategy(
+            action_type,
+            self_target=own_target,
+            opponent_targets=opponent_targets,
         )
