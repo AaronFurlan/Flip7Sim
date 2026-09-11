@@ -31,11 +31,21 @@ def main() -> None:
     print()
     print("Final scores:")
 
-    for player in simulation.players:
-        print(
+    winner_score = winners[0].total_score
+    for player in sorted(
+        simulation.players,
+        key=lambda p: p.total_score,
+        reverse=True,
+    ):
+        string = (
             f"  {player.player_name}: "
             f"{player.total_score} points"
         )
+        if player not in winners:
+            if winner_score > 0:
+                deficit = 100.0 * (winner_score - player.total_score) / winner_score
+                string += f" (-{deficit:.1f}%)"
+        print(string)
 
     print()
 
