@@ -289,11 +289,6 @@ class GameRound:
                 "A player cannot stay during the initial deal."
             )
 
-        if not player.round_cards:
-            raise RoundStateError(
-                "A player needs at least one card to stay."
-            )
-
         player.has_stayed = True
         player.is_active = False
 
