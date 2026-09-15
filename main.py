@@ -3,6 +3,7 @@ from flip7.agents.always_hit_agent import AlwaysHitAgent
 from flip7.agents.algorithmic_numbers_only_agent import AlgorithmicNumbersOnlyAgent
 from flip7.agents.threshold_agent import SimpleThresholdAgent
 from flip7.agents.mcts_agent import MCTSAgent
+from flip7.agents.rl_agent import QLearningAgent
 from flip7.simulation.simulator import GameSimulation
 
 
@@ -13,12 +14,13 @@ def main() -> None:
         AlgorithmicNumbersOnlyAgent("Rainman"),
         SimpleThresholdAgent("ConnyConservative"),
         # MCTSAgent("Cortana"), # Slow; (Calculates 200 simulations per turn)
+        QLearningAgent("Quinn", q_table_path="q_table.json", epsilon=0.0, training=False),
     ]
 
     simulation = GameSimulation(
         agents=agents,
-        winning_score=200,
-        seed=42,
+        winning_score=10000,
+        seed=40,
         reporter=print,
     )
 
