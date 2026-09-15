@@ -220,6 +220,7 @@ class GameSimulation:
         seed: int | None = None,
         deck: Deck | None = None,
         reporter: Callable[[str], None] | None = None,
+        on_round_finished: Callable[[dict[Player, int]], None] | None = None,
     ) -> None:
         self.agents = list(agents)
         self.players = [Player(agent.player_name) for agent in self.agents]
@@ -234,6 +235,8 @@ class GameSimulation:
         self.rounds_played = 0
         self._reporter = reporter
         self._reported_card_draw_count = 0
+
+        self._on_round_finished = on_round_finished
 
     def run(self) -> list[Player]:
         self.game.start_game()
@@ -253,6 +256,8 @@ class GameSimulation:
             self.rounds_played += 1
 
             self._report_round_finished(round_scores)
+            if self._on_round_finished is not None:
+                self._on_round_finished(round_scores)
 
             if self.game.is_game_finished():
                 return self.game.get_winners()
